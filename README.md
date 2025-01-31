@@ -1,9 +1,10 @@
 # How to run?
 
-make compile PORT_DIR=<TI || PI> OUT_NAME=<OUTPUT NAME>
-or
-make compile PORT_DIR=<TI || PI> OUT_NAME=<OUTPUT NAME> XCFLAGS="-g -DMULTITHREAD=<Thread count> -DUSE_PTHREAD=1 
+`make compile PORT_DIR=<TI || PI> OUT_NAME=<OUTPUT NAME>`
 
+or
+
+`make compile PORT_DIR=<TI || PI> OUT_NAME=<OUTPUT NAME> XCFLAGS="-g -DMULTITHREAD=<Thread count> -DUSE_PTHREAD=1`
 
 
 # Introduction
