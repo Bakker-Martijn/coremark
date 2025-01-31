@@ -1,4 +1,4 @@
-# How to run?
+# How to compile?
 
 `make compile PORT_DIR=<TI || PI> OUT_NAME=<OUTPUT NAME>`
 
