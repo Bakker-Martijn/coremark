@@ -18,42 +18,8 @@ Original Author: Shay Gal-on
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "coremark.h"
-#if CALLGRIND_RUN
-#include <valgrind/callgrind.h>
-#endif
+#include "../coremark.h"
 
-#if (MEM_METHOD == MEM_MALLOC)
-/* Function: portable_malloc
-        Provide malloc() functionality in a platform specific way.
-*/
-void *
-portable_malloc(size_t size)
-{
-    return malloc(size);
-}
-/* Function: portable_free
-        Provide free() functionality in a platform specific way.
-*/
-void
-portable_free(void *p)
-{
-    free(p);
-}
-#else
-void *
-portable_malloc(size_t size)
-{
-    return NULL;
-}
-void
-portable_free(void *p)
-{
-    p = NULL;
-}
-#endif
-
-#if (SEED_METHOD == SEED_VOLATILE)
 #if VALIDATION_RUN
 volatile ee_s32 seed1_volatile = 0x3415;
 volatile ee_s32 seed2_volatile = 0x3415;
@@ -71,14 +37,13 @@ volatile ee_s32 seed3_volatile = 0x8;
 #endif
 volatile ee_s32 seed4_volatile = ITERATIONS;
 volatile ee_s32 seed5_volatile = 0;
-#endif
-/* Porting: Timing functions
+/* Porting : Timing functions
         How to capture time and convert to seconds must be ported to whatever is
    supported by the platform. e.g. Read value from on board RTC, read value from
    cpu clock cycles performance counter etc. Sample implementation for standard
    time.h and windows.h definitions included.
 */
-/* Define: TIMER_RES_DIVIDER
+/* Define : TIMER_RES_DIVIDER
         Divider to trade off timer resolution and total time that can be
    measured.
 
@@ -86,49 +51,18 @@ volatile ee_s32 seed5_volatile = 0;
    does not occur. If there are issues with the return value overflowing,
    increase this value.
         */
-#if USE_CLOCK
 #define NSECS_PER_SEC              CLOCKS_PER_SEC
-#define EE_TIMER_TICKER_RATE       1000
 #define CORETIMETYPE               clock_t
 #define GETMYTIME(_t)              (*_t = clock())
 #define MYTIMEDIFF(fin, ini)       ((fin) - (ini))
 #define TIMER_RES_DIVIDER          1
 #define SAMPLE_TIME_IMPLEMENTATION 1
-#elif defined(_MSC_VER)
-#define NSECS_PER_SEC        10000000
-#define EE_TIMER_TICKER_RATE 1000
-#define CORETIMETYPE         FILETIME
-#define GETMYTIME(_t)        GetSystemTimeAsFileTime(_t)
-#define MYTIMEDIFF(fin, ini) \
-    (((*(__int64 *)&fin) - (*(__int64 *)&ini)) / TIMER_RES_DIVIDER)
-/* setting to millisces resolution by default with MSDEV */
-#ifndef TIMER_RES_DIVIDER
-#define TIMER_RES_DIVIDER 1000
-#endif
-#define SAMPLE_TIME_IMPLEMENTATION 1
-#elif HAS_TIME_H
-#define NSECS_PER_SEC        1000000000
-#define EE_TIMER_TICKER_RATE 1000
-#define CORETIMETYPE         struct timespec
-#define GETMYTIME(_t)        clock_gettime(CLOCK_REALTIME, _t)
-#define MYTIMEDIFF(fin, ini)                                         \
-    ((fin.tv_sec - ini.tv_sec) * (NSECS_PER_SEC / TIMER_RES_DIVIDER) \
-     + (fin.tv_nsec - ini.tv_nsec) / TIMER_RES_DIVIDER)
-/* setting to 1/1000 of a second resolution by default with linux */
-#ifndef TIMER_RES_DIVIDER
-#define TIMER_RES_DIVIDER 1000000
-#endif
-#define SAMPLE_TIME_IMPLEMENTATION 1
-#else
-#define SAMPLE_TIME_IMPLEMENTATION 0
-#endif
-#define EE_TICKS_PER_SEC (NSECS_PER_SEC / TIMER_RES_DIVIDER)
+#define EE_TICKS_PER_SEC           (NSECS_PER_SEC / TIMER_RES_DIVIDER)
 
-#if SAMPLE_TIME_IMPLEMENTATION
 /** Define Host specific (POSIX), or target specific global time variables. */
 static CORETIMETYPE start_time_val, stop_time_val;
 
-/* Function: start_time
+/* Function : start_time
         This function will be called right before starting the timed portion of
    the benchmark.
 
@@ -140,14 +74,8 @@ void
 start_time(void)
 {
     GETMYTIME(&start_time_val);
-#if CALLGRIND_RUN
-    CALLGRIND_START_INSTRUMENTATION
-#endif
-#if MICA
-    asm volatile("int3"); /*1 */
-#endif
 }
-/* Function: stop_time
+/* Function : stop_time
         This function will be called right after ending the timed portion of the
    benchmark.
 
@@ -158,15 +86,9 @@ start_time(void)
 void
 stop_time(void)
 {
-#if CALLGRIND_RUN
-    CALLGRIND_STOP_INSTRUMENTATION
-#endif
-#if MICA
-    asm volatile("int3"); /*1 */
-#endif
     GETMYTIME(&stop_time_val);
 }
-/* Function: get_time
+/* Function : get_time
         Return an abstract "ticks" number that signifies time on the system.
 
         Actual value returned may be cpu cycles, milliseconds or any other
@@ -182,7 +104,7 @@ get_time(void)
         = (CORE_TICKS)(MYTIMEDIFF(stop_time_val, start_time_val));
     return elapsed;
 }
-/* Function: time_in_secs
+/* Function : time_in_secs
         Convert the value returned by get_time to seconds.
 
         The <secs_ret> type is used to accommodate systems with no support for
@@ -195,13 +117,10 @@ time_in_secs(CORE_TICKS ticks)
     secs_ret retval = ((secs_ret)ticks) / (secs_ret)EE_TICKS_PER_SEC;
     return retval;
 }
-#else
-#error "Please implement timing functionality in core_portme.c"
-#endif /* SAMPLE_TIME_IMPLEMENTATION */
 
 ee_u32 default_num_contexts = MULTITHREAD;
 
-/* Function: portable_init
+/* Function : portable_init
         Target specific initialization code
         Test for some common mistakes.
 */

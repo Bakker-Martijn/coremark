@@ -185,8 +185,52 @@ typedef size_t         ee_size_t;
 */
 extern ee_u32 default_num_contexts;
 
+
+#if (MULTITHREAD > 1)
+#if USE_PTHREAD
+#include <pthread.h>
+#define PARALLEL_METHOD "PThreads"
+#elif USE_FORK
+#include <unistd.h>
+#include <errno.h>
+#include <sys/wait.h>
+#include <sys/shm.h>
+#include <string.h> /* for memcpy */
+#define PARALLEL_METHOD "Fork"
+#elif USE_SOCKET
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#define PARALLEL_METHOD "Sockets"
+#else
+#define PARALLEL_METHOD "Proprietary"
+#error \
+    "Please implement multicore functionality in core_portme.c to use multiple contexts."
+#endif /* Method for multithreading */
+#endif /* MULTITHREAD > 1 */
+
 typedef struct CORE_PORTABLE_S
 {
+#if (MULTITHREAD > 1)
+#if USE_PTHREAD
+    pthread_t thread;
+#elif USE_FORK
+    pid_t pid;
+    int   shmid;
+    void *shm;
+#elif USE_SOCKET
+    pid_t              pid;
+    int                sock;
+    struct sockaddr_in sa;
+#endif /* Method for multithreading */
+#endif /* MULTITHREAD>1 */
     ee_u8 portable_id;
 } core_portable;
 
@@ -194,15 +238,16 @@ typedef struct CORE_PORTABLE_S
 void portable_init(core_portable *p, int *argc, char *argv[]);
 void portable_fini(core_portable *p);
 
-#if !defined(PROFILE_RUN) && !defined(PERFORMANCE_RUN) \
-    && !defined(VALIDATION_RUN)
+#if (SEED_METHOD == SEED_VOLATILE)
+#if (VALIDATION_RUN || PERFORMANCE_RUN || PROFILE_RUN)
+#define RUN_TYPE_FLAG 1
+#else
 #if (TOTAL_DATA_SIZE == 1200)
 #define PROFILE_RUN 1
-#elif (TOTAL_DATA_SIZE == 2000)
-#define PERFORMANCE_RUN 1
 #else
-#define VALIDATION_RUN 1
+#define PERFORMANCE_RUN 1
 #endif
 #endif
+#endif /* SEED_METHOD==SEED_VOLATILE */
 
 #endif /* CORE_PORTME_H */

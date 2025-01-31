@@ -23,31 +23,18 @@ run: $(OUTFILE) rerun score
 score:
 	@echo "Check run1.log and run2.log for results."
 	@echo "See README.md for run and reporting rules." 
-	
+
 ifndef PORT_DIR
-# Ports for a couple of common self hosted platforms
-UNAME=$(shell if command -v uname 2> /dev/null; then uname ; fi)
-ifneq (,$(findstring CYGWIN,$(UNAME)))
-PORT_DIR=cygwin
-endif
-ifneq (,$(findstring Darwin,$(UNAME)))
-PORT_DIR=macos
-endif
-ifneq (,$(findstring FreeBSD,$(UNAME)))
-PORT_DIR=freebsd
-endif
-ifneq (,$(findstring Linux,$(UNAME)))
-PORT_DIR=linux
-endif
-endif
-ifndef PORT_DIR
-$(error PLEASE define PORT_DIR! (e.g. make PORT_DIR=simple)) 
+$(error PLEASE define PORT_DIR! (e.g. make PORT_DIR=ti)) 
 endif
 vpath %.c $(PORT_DIR)
 vpath %.h $(PORT_DIR)
 vpath %.mak $(PORT_DIR)
 include $(PORT_DIR)/core_portme.mak
 
+ifndef OUT_NAME
+OUT_NAME = coremark
+endif
 ifndef ITERATIONS
 ITERATIONS=0
 endif
@@ -61,7 +48,7 @@ CORE_FILES = core_list_join core_main core_matrix core_state core_util
 ORIG_SRCS = $(addsuffix .c,$(CORE_FILES))
 SRCS = $(ORIG_SRCS) $(PORT_SRCS)
 OBJS = $(addprefix $(OPATH),$(addsuffix $(OEXT),$(CORE_FILES)) $(PORT_OBJS))
-OUTNAME = coremark$(EXE)
+OUTNAME = $(OUT_NAME)$(EXE)
 OUTFILE = $(OPATH)$(OUTNAME)
 LOUTCMD = $(OFLAG) $(OUTFILE) $(LFLAGS_END)
 OUTCMD = $(OUTFLAG) $(OUTFILE) $(LFLAGS_END)
